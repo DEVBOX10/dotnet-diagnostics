@@ -8,7 +8,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <!-- Latest symstore version updated by darc -->
-    <MicrosoftSymbolStoreVersion>1.0.156601</MicrosoftSymbolStoreVersion>
+    <MicrosoftSymbolStoreVersion>1.0.207501</MicrosoftSymbolStoreVersion>
     <!-- Runtime versions to test -->
     <MicrosoftNETCoreApp21Version>2.1.23</MicrosoftNETCoreApp21Version>
     <MicrosoftAspNetCoreApp21Version>$(MicrosoftNETCoreApp21Version)</MicrosoftAspNetCoreApp21Version>
@@ -17,11 +17,11 @@
     <MicrosoftNETCoreApp50Version>5.0.0</MicrosoftNETCoreApp50Version>
     <MicrosoftAspNetCoreApp50Version>$(MicrosoftNETCoreApp50Version)</MicrosoftAspNetCoreApp50Version>
     <!-- Latest shared runtime version updated by darc -->
-    <VSRedistCommonNetCoreSharedFrameworkx6460Version>6.0.0-alpha.1.20420.3</VSRedistCommonNetCoreSharedFrameworkx6460Version>
-    <MicrosoftNETCoreAppRuntimewinx64Version>6.0.0-alpha.1.20420.3</MicrosoftNETCoreAppRuntimewinx64Version>
+    <VSRedistCommonNetCoreSharedFrameworkx6460Version>6.0.0-preview.2.21101.2</VSRedistCommonNetCoreSharedFrameworkx6460Version>
+    <MicrosoftNETCoreAppRuntimewinx64Version>6.0.0-preview.2.21101.2</MicrosoftNETCoreAppRuntimewinx64Version>
     <!-- Latest shared aspnetcore version updated by darc -->
-    <MicrosoftAspNetCoreAppRefInternalVersion>6.0.0-alpha.1.20573.13</MicrosoftAspNetCoreAppRefInternalVersion>
-    <MicrosoftAspNetCoreAppRefVersion>6.0.0-alpha.1.20573.13</MicrosoftAspNetCoreAppRefVersion>
+    <MicrosoftAspNetCoreAppRefInternalVersion>6.0.0-preview.2.21081.2</MicrosoftAspNetCoreAppRefInternalVersion>
+    <MicrosoftAspNetCoreAppRefVersion>6.0.0-preview.2.21081.2</MicrosoftAspNetCoreAppRefVersion>
     <!-- dotnet/installer: Testing version of the SDK. Needed for the signed & entitled host. -->
     <MicrosoftDotnetSdkInternalVersion>5.0.100</MicrosoftDotnetSdkInternalVersion>
   </PropertyGroup>
@@ -43,17 +43,17 @@
     <MicrosoftAspNetCoreResponseCompressionVersion>2.1.1</MicrosoftAspNetCoreResponseCompressionVersion>
     <MicrosoftBclHashCodeVersion>1.1.0</MicrosoftBclHashCodeVersion>
     <MicrosoftBclAsyncInterfacesVersion>1.1.0</MicrosoftBclAsyncInterfacesVersion>
-    <MicrosoftDiagnosticsRuntimeVersion>2.0.156101</MicrosoftDiagnosticsRuntimeVersion>
+    <MicrosoftDiagnosticsRuntimeVersion>2.0.161401</MicrosoftDiagnosticsRuntimeVersion>
     <MicrosoftDiagnosticsRuntimeUtilitiesVersion>2.0.156101</MicrosoftDiagnosticsRuntimeUtilitiesVersion>
     <ParallelStacksRuntimeVersion>2.0.1</ParallelStacksRuntimeVersion>
     <MicrosoftDiaSymReaderNativePackageVersion>1.7.0</MicrosoftDiaSymReaderNativePackageVersion>
-    <MicrosoftDiagnosticsTracingTraceEventVersion>2.0.57</MicrosoftDiagnosticsTracingTraceEventVersion>
+    <MicrosoftDiagnosticsTracingTraceEventVersion>2.0.64</MicrosoftDiagnosticsTracingTraceEventVersion>
     <MicrosoftExtensionsConfigurationJsonVersion>2.1.1</MicrosoftExtensionsConfigurationJsonVersion>
     <MicrosoftExtensionsConfigurationKeyPerFileVersion>2.1.1</MicrosoftExtensionsConfigurationKeyPerFileVersion>
     <MicrosoftExtensionsDependencyInjectionVersion>2.1.1</MicrosoftExtensionsDependencyInjectionVersion>
     <MicrosoftExtensionsHostingAbstractionsVersion>2.1.1</MicrosoftExtensionsHostingAbstractionsVersion>
     <MicrosoftExtensionsLoggingVersion>2.1.1</MicrosoftExtensionsLoggingVersion>
-    <MicrosoftExtensionsLoggingConsoleVersion>2.1.1</MicrosoftExtensionsLoggingConsoleVersion>
+    <MicrosoftExtensionsLoggingConsoleVersion>5.0.0</MicrosoftExtensionsLoggingConsoleVersion>
     <!-- We use a newer version of LoggingEventSource due to a bug in an older version-->
     <MicrosoftExtensionsLoggingEventSourceVersion>3.1.4</MicrosoftExtensionsLoggingEventSourceVersion>
     <SystemCommandLineVersion>2.0.0-beta1.20468.1</SystemCommandLineVersion>
@@ -63,7 +63,7 @@
     <SystemThreadingChannelsVersion>4.7.0</SystemThreadingChannelsVersion>
     <XUnitVersion>2.4.1</XUnitVersion>
     <XUnitAbstractionsVersion>2.0.3</XUnitAbstractionsVersion>
-    <MicrosoftDotNetRemoteExecutorVersion>6.0.0-beta.20567.7</MicrosoftDotNetRemoteExecutorVersion>
+    <MicrosoftDotNetRemoteExecutorVersion>6.0.0-beta.21078.12</MicrosoftDotNetRemoteExecutorVersion>
     <cdbsosversion>10.0.18362</cdbsosversion>
   </PropertyGroup>
 </Project>
