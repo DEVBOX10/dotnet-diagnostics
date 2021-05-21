@@ -120,6 +120,11 @@ namespace SOS.Extensions
             AddRef();
         }
 
+        protected override void Destroy()
+        {
+            Trace.TraceInformation("HostServices.Destroy");
+        }
+
         #region IHost
 
         public IServiceEvent OnShutdownEvent { get; } = new ServiceEvent();
@@ -235,21 +240,14 @@ namespace SOS.Extensions
             uint processId)
         {
             Trace.TraceInformation($"HostServices.UpdateTarget {processId}");
-            if (processId == 0)
+            if (_target == null)
+            {
+                return CreateTarget(self);
+            }
+            else if (_target.ProcessId.GetValueOrDefault() != processId)
             {
                 DestroyTarget(self);
-            }
-            else
-            {
-                if (_target == null)
-                {
-                    return CreateTarget(self);
-                }
-                else if (_target.ProcessId.GetValueOrDefault() != processId)
-                {
-                    DestroyTarget(self);
-                    return CreateTarget(self);
-                }
+                return CreateTarget(self);
             }
             return HResult.S_OK;
         }

@@ -2389,7 +2389,7 @@ enum StackTraceElementFlags
 };
 
 // This struct needs to match the definition in the runtime.
-// See: https://github.com/dotnet/runtime/blob/master/src/coreclr/src/vm/clrex.h
+// See: https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/clrex.h
 struct StackTraceElement
 {
     UINT_PTR        ip;
@@ -2815,7 +2815,7 @@ HRESULT FormatException(CLRDATA_ADDRESS taObj, BOOL bLineNumbers = FALSE)
             if (arrayLen != 0 && hr == S_OK)
             {
                 // This code is accessing the StackTraceInfo class in the runtime.
-                // See: https://github.com/dotnet/runtime/blob/master/src/coreclr/src/vm/clrex.h
+                // See: https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/clrex.h
 #ifdef _TARGET_WIN64_
                 DWORD_PTR dataPtr = taStackTrace + sizeof(DWORD_PTR) + sizeof(DWORD) + sizeof(DWORD);
 #else
@@ -3691,7 +3691,8 @@ DECLARE_API(EEHeap)
         }
 
         ExtOut("Number of GC Heaps: %d\n", dwNHeaps);
-        DWORD_PTR totalSize = 0;
+        DWORD_PTR totalAllocatedSize = 0;
+        DWORD_PTR totalCommittedSize = 0;
         if (!gcheap.bServerMode)
         {
             DacpGcHeapDetails heapDetails;
@@ -3701,9 +3702,11 @@ DECLARE_API(EEHeap)
                 return Status;
             }
 
-            GCHeapInfo (heapDetails, totalSize);
-            ExtOut("Total Size:              ");
-            PrintHeapSize(totalSize, 0);
+            GCHeapInfo (heapDetails, totalAllocatedSize, totalCommittedSize);
+            ExtOut("Total Allocated Size:              ");
+            PrintHeapSize(totalAllocatedSize, 0);
+            ExtOut("Total Committed Size:              ");
+            PrintHeapSize(totalCommittedSize, 0);
         }
         else
         {
@@ -3732,17 +3735,23 @@ DECLARE_API(EEHeap)
                 }
                 ExtOut("------------------------------\n");
                 ExtOut("Heap %d (%p)\n", n, SOS_PTR(heapAddrs[n]));
-                DWORD_PTR heapSize = 0;
+                DWORD_PTR heapAllocSize = 0;
+                DWORD_PTR heapCommitSize = 0;
                 GCHeapDetails heapDetails(dacHeapDetails, heapAddrs[n]);
-                GCHeapInfo (heapDetails, heapSize);
-                totalSize += heapSize;
-                ExtOut("Heap Size:       " WIN86_8SPACES);
-                PrintHeapSize(heapSize, 0);
+                GCHeapInfo (heapDetails, heapAllocSize, heapCommitSize);
+                totalAllocatedSize += heapAllocSize;
+                totalCommittedSize += heapCommitSize;
+                ExtOut("Allocated Heap Size:       " WIN86_8SPACES);
+                PrintHeapSize(heapAllocSize, 0);
+                ExtOut("Committed Heap Size:       " WIN86_8SPACES);
+                PrintHeapSize(heapCommitSize, 0);
             }
         }
         ExtOut("------------------------------\n");
-        ExtOut("GC Heap Size:    " WIN86_8SPACES);
-        PrintHeapSize(totalSize, 0);
+        ExtOut("GC Allocated Heap Size:    " WIN86_8SPACES);
+        PrintHeapSize(totalAllocatedSize, 0);
+        ExtOut("GC Committed Heap Size:    " WIN86_8SPACES);
+        PrintHeapSize(totalCommittedSize, 0);
     }
     return Status;
 }
@@ -3994,8 +4003,8 @@ public:
             {"-verify", &mVerify, COBOOL, FALSE},    // verify heap objects (!heapverify)
             {"-thinlock", &mThinlock, COBOOL, FALSE},// list only thinlocks
             {"-short", &mShort, COBOOL, FALSE},      // list only addresses
-            {"-min", &mMinSize, COHEX, TRUE},        // min size of objects to display
-            {"-max", &mMaxSize, COHEX, TRUE},        // max size of objects to display
+            {"-min", &mMinSize, COHEX, TRUE},        // min size of objects to display (hex)
+            {"-max", &mMaxSize, COHEX, TRUE},        // max size of objects to display (hex)
             {"-live", &mLive, COHEX, FALSE},         // only print live objects
             {"-dead", &mDead, COHEX, FALSE},         // only print dead objects
             {"/d", &mDML, COBOOL, FALSE},            // Debugger Markup Language
@@ -5581,9 +5590,9 @@ DECLARE_API(GCHeapStat)
             tempf = ((float)(hpUsage.genUsage[0].freed + hpUsage.genUsage[1].freed + hpUsage.genUsage[2].freed)) /
                 (hpUsage.genUsage[0].allocd + hpUsage.genUsage[1].allocd + hpUsage.genUsage[2].allocd);
             int pohFreeUsage = heapDetails.has_poh ? (int)(100*((float)hpUsage.genUsage[4].freed) / (hpUsage.genUsage[4].allocd)) : 0;
-            ExtOut("SOH:%3d%s LOH:%3d%s POH:%3d%s\n", (int)(100 * tempf), "%%",
-                (int)(100*((float)hpUsage.genUsage[3].freed) / (hpUsage.genUsage[3].allocd)), "%%",
-                pohFreeUsage, "%%");
+            ExtOut("SOH:%3d%s LOH:%3d%s POH:%3d%s\n", (int)(100 * tempf), "%",
+                (int)(100*((float)hpUsage.genUsage[3].freed) / (hpUsage.genUsage[3].allocd)), "%",
+                pohFreeUsage, "%");
 
             if (bIncUnreachable)
             {
@@ -5594,10 +5603,16 @@ DECLARE_API(GCHeapStat)
                 tempf = ((float)(hpUsage.genUsage[0].unrooted+hpUsage.genUsage[1].unrooted+hpUsage.genUsage[2].unrooted)) /
                     (hpUsage.genUsage[0].allocd+hpUsage.genUsage[1].allocd+hpUsage.genUsage[2].allocd);
                 int pohUnrootedUsage = heapDetails.has_poh ? (int)(100*((float)hpUsage.genUsage[4].unrooted) / (hpUsage.genUsage[4].allocd)) : 0;
-                ExtOut("SOH:%3d%s LOH:%3d%s POH:%3d%s\n", (int)(100 * tempf), "%%",
-                    (int)(100*((float)hpUsage.genUsage[3].unrooted) / (hpUsage.genUsage[3].allocd)), "%%",
-                    pohUnrootedUsage, "%%");
+                ExtOut("SOH:%3d%s LOH:%3d%s POH:%3d%s\n", (int)(100 * tempf), "%",
+                    (int)(100*((float)hpUsage.genUsage[3].unrooted) / (hpUsage.genUsage[3].allocd)), "%",
+                    pohUnrootedUsage, "%");
             }
+            
+            ExtOut("\nCommitted space:");
+            ExtOut("Heap%-4d %12" POINTERSIZE_TYPE "u %12" POINTERSIZE_TYPE "u %12" POINTERSIZE_TYPE "u %12" POINTERSIZE_TYPE "u %12" POINTERSIZE_TYPE "u\n", 0,
+                hpUsage.genUsage[0].committed, hpUsage.genUsage[1].committed,
+                hpUsage.genUsage[2].committed, hpUsage.genUsage[3].committed,
+                hpUsage.genUsage[4].committed);
         }
     }
     else
@@ -5683,9 +5698,9 @@ DECLARE_API(GCHeapStat)
             tempf = ((float)(hpUsage[n].genUsage[0].freed + hpUsage[n].genUsage[1].freed + hpUsage[n].genUsage[2].freed)) /
                 (hpUsage[n].genUsage[0].allocd + hpUsage[n].genUsage[1].allocd + hpUsage[n].genUsage[2].allocd);
             int pohFreeUsage = hasPoh ? (int)(100*((float)hpUsage[n].genUsage[4].freed) / (hpUsage[n].genUsage[4].allocd)) : 0;
-            ExtOut("SOH:%3d%s LOH:%3d%s POH:%3d%s\n", (int)(100 * tempf), "%%",
-                (int)(100*((float)hpUsage[n].genUsage[3].freed) / (hpUsage[n].genUsage[3].allocd)), "%%",
-                pohFreeUsage, "%%");
+            ExtOut("SOH:%3d%s LOH:%3d%s POH:%3d%s\n", (int)(100 * tempf), "%",
+                (int)(100*((float)hpUsage[n].genUsage[3].freed) / (hpUsage[n].genUsage[3].allocd)), "%",
+                pohFreeUsage, "%");
         }
         ExtOut("Total    %12" POINTERSIZE_TYPE "u %12" POINTERSIZE_TYPE "u %12" POINTERSIZE_TYPE "u %12" POINTERSIZE_TYPE "u %12" POINTERSIZE_TYPE "u\n",
             genUsageStat[0].freed, genUsageStat[1].freed,
@@ -5705,9 +5720,9 @@ DECLARE_API(GCHeapStat)
                 tempf = ((float)(hpUsage[n].genUsage[0].unrooted + hpUsage[n].genUsage[1].unrooted + hpUsage[n].genUsage[2].unrooted)) /
                     (hpUsage[n].genUsage[0].allocd + hpUsage[n].genUsage[1].allocd + hpUsage[n].genUsage[2].allocd);
                 int pohUnrootedUsage = hasPoh ? (int)(100*((float)hpUsage[n].genUsage[4].unrooted) / (hpUsage[n].genUsage[4].allocd)) : 0;
-                ExtOut("SOH:%3d%s LOH:%3d%s POH:%3d%s\n", (int)(100 * tempf), "%%",
-                    (int)(100*((float)hpUsage[n].genUsage[3].unrooted) / (hpUsage[n].genUsage[3].allocd)), "%%",
-                    pohUnrootedUsage, "%%");
+                ExtOut("SOH:%3d%s LOH:%3d%s POH:%3d%s\n", (int)(100 * tempf), "%",
+                    (int)(100*((float)hpUsage[n].genUsage[3].unrooted) / (hpUsage[n].genUsage[3].allocd)), "%",
+                    pohUnrootedUsage, "%");
             }
             ExtOut("Total    %12" POINTERSIZE_TYPE "u %12" POINTERSIZE_TYPE "u %12" POINTERSIZE_TYPE "u %12" POINTERSIZE_TYPE "u %12" POINTERSIZE_TYPE "u\n",
                 genUsageStat[0].unrooted, genUsageStat[1].unrooted,
@@ -8825,7 +8840,7 @@ DECLARE_API(ThreadPool)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        ExtOut ("CPU utilization: %d %s\n", threadpool.cpuUtilization, "%%");
+    ExtOut ("CPU utilization: %d %s\n", threadpool.cpuUtilization, "%");
     ExtOut ("Worker Thread:");
     ExtOut (" Total: %d", threadpool.NumWorkingWorkerThreads + threadpool.NumIdleWorkerThreads + threadpool.NumRetiredWorkerThreads);
     ExtOut (" Running: %d", threadpool.NumWorkingWorkerThreads);
@@ -15155,17 +15170,24 @@ static HRESULT DumpMDInfoBuffer(DWORD_PTR dwStartAddr, DWORD Flags, ULONG64 Esp,
     // If the dbgeng functions fail to get the module/assembly name, use the DAC API
     if (!bModuleNameWorked)
     {
-        if (g_sos->GetPEFileName(dmd.File, MAX_LONGPATH, wszNameBuffer, NULL) == S_OK)
+        wszNameBuffer[0] = W('\0');
+        if (FAILED(g_sos->GetPEFileName(dmd.File, MAX_LONGPATH, wszNameBuffer, NULL)) || wszNameBuffer[0] == W('\0'))
         {
-            if (wszNameBuffer[0] != W('\0'))
+            ToRelease<IXCLRDataModule> pModule;
+            if (SUCCEEDED(g_sos->GetModule(dmd.Address, &pModule)))
             {
-                WCHAR *pJustName = _wcsrchr(wszNameBuffer, GetTargetDirectorySeparatorW());
-                if (pJustName == NULL)
-                    pJustName = wszNameBuffer - 1;
-
-                DOAPPEND(pJustName + 1);
-                bModuleNameWorked = TRUE;
+                ULONG32 nameLen = 0;
+                pModule->GetFileName(MAX_LONGPATH, &nameLen, wszNameBuffer);
             }
+        }
+        if (wszNameBuffer[0] != W('\0'))
+        {
+            WCHAR *pJustName = _wcsrchr(wszNameBuffer, GetTargetDirectorySeparatorW());
+            if (pJustName == NULL)
+                pJustName = wszNameBuffer - 1;
+
+            DOAPPEND(pJustName + 1);
+            bModuleNameWorked = TRUE;
         }
     }
 
@@ -15732,7 +15754,7 @@ HRESULT AppendExceptionInfo(CLRDATA_ADDRESS cdaObj,
         if (arrayLen)
         {
             // This code is accessing the StackTraceInfo class in the runtime.
-            // See: https://github.com/dotnet/runtime/blob/master/src/coreclr/src/vm/clrex.h
+            // See: https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/clrex.h
 #ifdef _TARGET_WIN64_
             DWORD_PTR dataPtr = arrayPtr + sizeof(DWORD_PTR) + sizeof(DWORD) + sizeof(DWORD);
 #else

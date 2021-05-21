@@ -49,7 +49,7 @@ For analyzing CPU usage, IO, lock contention, allocation rate, etc the investiga
 
 **Convert a trace to use with speedscope**
 
-    > dotnet trace convert ~/trace.nettrace --to-speedscope
+    > dotnet trace convert ~/trace.nettrace --format Speedscope
     Writing:     ~/trace.speedscope.json
     Conversion complete
 
@@ -199,7 +199,7 @@ MONITOR
         CPU Usage (%)                                 24
         GC Heap Size (MB)                            811
 
-    3. Monitoring EventCounter values from user-defined EventSource: (see https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.Tracing/documentation/EventCounterTutorial.md on how to do this.0)
+    3. Monitoring EventCounter values from user-defined EventSource: (see https://github.com/dotnet/corefx/blob/main/src/System.Diagnostics.Tracing/documentation/EventCounterTutorial.md on how to do this.0)
 
       > dotnet-counters monitor --processId 1902 Samples-EventCounterDemos-Minimal
 
@@ -311,7 +311,7 @@ COLLECT
                          [--providers <list-of-comma-separated-providers>]
                          [--format <trace-file-format>]
 
-    Collects a diagnostic trace from a currently running process
+    Collects a diagnostic trace from a currently running process or launch a child process and trace it. Append -- to the collect command to instruct the tool to run a command and trace it immediately.
 
     -p, --process-id
         The process to collect the trace from
@@ -351,6 +351,8 @@ COLLECT
     --format
         The format of the output trace file. The default value is nettrace.
 
+    --show-child-io
+        Shows the input and output streams of a launched child process in the current console.
 
     Examples:
       
@@ -1195,7 +1197,7 @@ perf top monitors a machine and shows an updating console UI with the most expen
 
 ### Pprof
 
-Pprof is both a runtime library used by golang to collect trace data as well as a CLI tool to visualize that data after it has been collected. The CLI tool is the focus here. Snippets below from https://github.com/google/pprof/blob/master/doc/README.md
+Pprof is both a runtime library used by golang to collect trace data as well as a CLI tool to visualize that data after it has been collected. The CLI tool is the focus here. Snippets below from https://github.com/google/pprof/blob/main/doc/README.md
 
 Pprof follows the convention Pprof <format\> [options] source.
 

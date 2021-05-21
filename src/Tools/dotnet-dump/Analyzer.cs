@@ -15,6 +15,8 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Linq;
+using System.Security;
 
 namespace Microsoft.Diagnostics.Tools.Dump
 {
@@ -49,12 +51,34 @@ namespace Microsoft.Diagnostics.Tools.Dump
         {
             _consoleProvider.WriteLine($"Loading core dump: {dump_path} ...");
 
+            // Attempt to load the persisted command history
+            string dotnetHome;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                dotnetHome = Path.Combine(Environment.GetEnvironmentVariable("USERPROFILE"), ".dotnet");
+            }
+            else { 
+                dotnetHome = Path.Combine(Environment.GetEnvironmentVariable("HOME"), ".dotnet");
+            }
+            string historyFileName = Path.Combine(dotnetHome, "dotnet-dump.history");
+            try
+            {
+                string[] history = File.ReadAllLines(historyFileName);
+                _consoleProvider.AddCommandHistory(history);
+            }
+            catch (Exception ex) when 
+                (ex is IOException || 
+                 ex is UnauthorizedAccessException || 
+                 ex is NotSupportedException || 
+                 ex is SecurityException)
+            {
+            }
+
             try
             { 
                 using DataTarget dataTarget = DataTarget.LoadDump(dump_path.FullName);
 
                 OSPlatform targetPlatform = dataTarget.DataReader.TargetPlatform;
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || dataTarget.DataReader.EnumerateModules().Any((module) => Path.GetExtension(module.FileName) == ".dylib")) {
                     targetPlatform = OSPlatform.OSX;
                 }
                 _target = new TargetFromDataReader(dataTarget.DataReader, targetPlatform, this, dump_path.FullName);
@@ -81,7 +105,7 @@ namespace Microsoft.Diagnostics.Tools.Dump
                         }
                     }
                 }
-                if (!_consoleProvider.Shutdown)
+                if (!_consoleProvider.Shutdown && (!Console.IsOutputRedirected || Console.IsInputRedirected))
                 {
                     // Start interactive command line processing
                     _consoleProvider.WriteLine("Ready to process analysis commands. Type 'help' to list available commands or 'help [command]' to get detailed help on a command.");
@@ -111,6 +135,18 @@ namespace Microsoft.Diagnostics.Tools.Dump
                 {
                     _target.Close();
                     _target = null;
+                }
+                // Persist the current command history
+                try
+                {
+                    File.WriteAllLines(historyFileName, _consoleProvider.GetCommandHistory());
+                }
+                catch (Exception ex) when 
+                    (ex is IOException || 
+                     ex is UnauthorizedAccessException || 
+                     ex is NotSupportedException || 
+                     ex is SecurityException)
+                {
                 }
                 // Send shutdown event on exit
                 OnShutdownEvent.Fire();

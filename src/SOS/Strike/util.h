@@ -484,10 +484,12 @@ public:
         lowest_address = dacGCDetails.lowest_address;
         highest_address = dacGCDetails.highest_address;
         card_table = dacGCDetails.card_table;
+        has_regions = saved_sweep_ephemeral_seg == -1;
     }
 
     DacpGcHeapDetails original_heap_details;
     bool has_poh;
+    bool has_regions;
     CLRDATA_ADDRESS heapAddr; // Only filled in in server mode, otherwise NULL
     CLRDATA_ADDRESS alloc_allocated;
 
@@ -1804,13 +1806,14 @@ DWORD_PTR LoaderHeapInfo(CLRDATA_ADDRESS pLoaderHeapAddr, DWORD_PTR *wasted = 0)
 DWORD_PTR JitHeapInfo();
 DWORD_PTR VSDHeapInfo(CLRDATA_ADDRESS appDomain, DWORD_PTR *wasted = 0);
 
-DWORD GetNumComponents(TADDR obj);
+size_t GetNumComponents(TADDR obj);
 
 struct GenUsageStat
 {
     size_t allocd;
     size_t freed;
     size_t unrooted;
+    size_t committed;
 };
 
 struct HeapUsageStat
@@ -2123,7 +2126,7 @@ void GatherOneHeapFinalization(DacpGcHeapDetails& heapDetails, HeapStat *stat, B
 
 CLRDATA_ADDRESS GetAppDomainForMT(CLRDATA_ADDRESS mtPtr);
 CLRDATA_ADDRESS GetAppDomain(CLRDATA_ADDRESS objPtr);
-void GCHeapInfo(const GCHeapDetails &heap, DWORD_PTR &total_size);
+void GCHeapInfo(const GCHeapDetails &heap, DWORD_PTR &total_alloc_size, DWORD_PTR &total_committed_size);
 BOOL GCObjInHeap(TADDR taddrObj, const GCHeapDetails &heap,
     TADDR_SEGINFO& trngSeg, int& gen, TADDR_RANGE& allocCtx, BOOL &bLarge);
 
@@ -3180,7 +3183,7 @@ private:
 
     // Object/MT data:
     MTInfo *GetMTInfo(TADDR mt);
-    DWORD GetComponents(TADDR obj, TADDR mt);
+    size_t GetComponents(TADDR obj, TADDR mt);
     size_t GetSizeOfObject(TADDR obj, MTInfo *info);
 
     // RootNode management:

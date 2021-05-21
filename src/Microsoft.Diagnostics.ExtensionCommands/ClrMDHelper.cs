@@ -55,7 +55,7 @@ namespace Microsoft.Diagnostics.ExtensionCommands
             return tks.ToString();
         }
 
-        // from CLR implementation in https://github.com/dotnet/runtime/blob/master/src/libraries/System.Private.CoreLib/src/System/Threading/Tasks/Task.cs#L141
+        // from CLR implementation in https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/Threading/Tasks/Task.cs#L141
         internal const int TASK_STATE_STARTED                      = 0x00010000;
         internal const int TASK_STATE_DELEGATE_INVOKED             = 0x00020000;
         internal const int TASK_STATE_DISPOSED                     = 0x00040000;
@@ -733,7 +733,7 @@ namespace Microsoft.Diagnostics.ExtensionCommands
                     }
                     return start != end;
                 case GCGeneration.Generation2:
-                    if (!segment.IsLargeObjectSegment)
+                    if (!(segment.IsLargeObjectSegment || segment.IsPinnedObjectSegment))
                     {
                         start = segment.Generation2.Start;
                         end = segment.Generation2.End;
@@ -741,6 +741,13 @@ namespace Microsoft.Diagnostics.ExtensionCommands
                     return start != end;
                 case GCGeneration.LargeObjectHeap:
                     if (segment.IsLargeObjectSegment)
+                    {
+                        start = segment.Start;
+                        end = segment.End;
+                    }
+                    return start != end;
+                case GCGeneration.PinnedObjectHeap:
+                    if (segment.IsPinnedObjectSegment)
                     {
                         start = segment.Start;
                         end = segment.End;

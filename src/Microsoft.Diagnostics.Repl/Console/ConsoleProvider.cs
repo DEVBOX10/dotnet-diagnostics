@@ -5,6 +5,7 @@
 using Microsoft.Diagnostics.DebugServices;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 
@@ -25,6 +26,7 @@ namespace Microsoft.Diagnostics.Repl
 
         private string m_clearLine;
         private bool m_interactiveConsole;
+        private bool m_outputRedirected;
         private bool m_refreshingLine;
         private StringBuilder m_activeLine;
 
@@ -73,6 +75,7 @@ namespace Microsoft.Diagnostics.Repl
         {
             m_lastCommandLine = null;
             m_interactiveConsole = !Console.IsInputRedirected;
+            m_outputRedirected = Console.IsOutputRedirected;
             RefreshLine();
 
             // The special prompts for the test runner are built into this
@@ -118,7 +121,30 @@ namespace Microsoft.Diagnostics.Repl
         {
             ClearLine();
             m_shutdown = true;
+            // Delete the last command (usually q or exit) that caused Stop() to be
+            // called so the history doesn't fill up with exit commands.
+            if (m_selectedHistory > 0) {
+                m_history.RemoveAt(--m_selectedHistory);
+            }
             Console.CancelKeyPress -= new ConsoleCancelEventHandler(OnCtrlBreakKeyPress);
+        }
+
+        /// <summary>
+        /// Returns the current command history for serialization.
+        /// </summary>
+        public IEnumerable<string> GetCommandHistory()
+        {
+            return m_history.Select((sb) => sb.ToString());
+        }
+
+        /// <summary>
+        /// Adds the command history.
+        /// </summary>
+        /// <param name="commandHistory">command history strings to add</param>
+        public void AddCommandHistory(IEnumerable<string> commandHistory)
+        {
+            m_history.AddRange(commandHistory.Select((s) => new StringBuilder(s)));
+            m_selectedHistory = m_history.Count;
         }
 
         /// <summary>
@@ -245,7 +271,10 @@ namespace Microsoft.Diagnostics.Repl
             }
 
             Console.Write(m_clearLine);
-            Console.CursorLeft = 0;
+
+            if (!m_outputRedirected) {
+                Console.CursorLeft = 0;
+            }
         }
 
         private void PrintActiveLine()
@@ -288,7 +317,10 @@ namespace Microsoft.Diagnostics.Repl
             string text = m_activeLine.ToString(m_scrollPosition, max);
 
             Console.Write("{0}{1}", prompt, text);
-            Console.CursorLeft = prompt.Length + (m_cursorPosition - m_scrollPosition);
+
+            if (!m_outputRedirected) {
+                Console.CursorLeft = prompt.Length + (m_cursorPosition - m_scrollPosition);
+            }
         }
 
         private void RefreshLine()
