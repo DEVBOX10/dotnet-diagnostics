@@ -21,7 +21,7 @@ namespace Microsoft.Diagnostics.Tools.Trace
 {
     internal static class CollectCommandHandler
     {
-        delegate Task<int> CollectDelegate(CancellationToken ct, IConsole console, int processId, FileInfo output, uint buffersize, string providers, string profile, TraceFileFormat format, TimeSpan duration, string clrevents, string clreventlevel, string name, string port, bool showchildio);
+        delegate Task<int> CollectDelegate(CancellationToken ct, IConsole console, int processId, FileInfo output, uint buffersize, string providers, string profile, TraceFileFormat format, TimeSpan duration, string clrevents, string clreventlevel, string name, string port, bool showchildio, bool resumeRuntime);
 
         /// <summary>
         /// Collects a diagnostic trace from a currently running process or launch a child process and trace it.
@@ -41,14 +41,15 @@ namespace Microsoft.Diagnostics.Tools.Trace
         /// <param name="clreventlevel">The verbosity level of CLR events</param>
         /// <param name="port">Path to the diagnostic port to be created.</param>
         /// <param name="showchildio">Should IO from a child process be hidden.</param>
+        /// <param name="resumeRuntime">Resume runtime once session has been initialized.</param>
         /// <returns></returns>
-        private static async Task<int> Collect(CancellationToken ct, IConsole console, int processId, FileInfo output, uint buffersize, string providers, string profile, TraceFileFormat format, TimeSpan duration, string clrevents, string clreventlevel, string name, string diagnosticPort, bool showchildio)
+        private static async Task<int> Collect(CancellationToken ct, IConsole console, int processId, FileInfo output, uint buffersize, string providers, string profile, TraceFileFormat format, TimeSpan duration, string clrevents, string clreventlevel, string name, string diagnosticPort, bool showchildio, bool resumeRuntime)
         {
-            int ret = 0;
             bool collectionStopped = false;
             bool cancelOnEnter = true;
             bool cancelOnCtrlC = true;
             bool printStatusOverTime = true;
+            int ret = ReturnCode.Ok;
 
             try
             {
@@ -79,7 +80,7 @@ namespace Microsoft.Diagnostics.Tools.Trace
                     if (showchildio)
                     {
                         Console.WriteLine("--show-child-io must not be specified when attaching to a process");
-                        return ErrorCodes.ArgumentError;
+                        return ReturnCode.ArgumentError;
                     }
                     if (CommandUtils.ValidateArgumentsForAttach(processId, name, diagnosticPort, out int resolvedProcessId))
                     {
@@ -87,12 +88,12 @@ namespace Microsoft.Diagnostics.Tools.Trace
                     }
                     else
                     {
-                        return ErrorCodes.ArgumentError;
+                        return ReturnCode.ArgumentError;
                     }
                 }
                 else if (!CommandUtils.ValidateArgumentsForChildProcess(processId, name, diagnosticPort))
                 {
-                    return ErrorCodes.ArgumentError;
+                    return ReturnCode.ArgumentError;
                 }
 
                 if (profile.Length == 0 && providers.Length == 0 && clrevents.Length == 0)
@@ -116,7 +117,7 @@ namespace Microsoft.Diagnostics.Tools.Trace
                     if (selectedProfile == null)
                     {
                         Console.Error.WriteLine($"Invalid profile name: {profile}");
-                        return ErrorCodes.ArgumentError;
+                        return ReturnCode.ArgumentError;
                     }
 
                     Profile.MergeProfileAndProviders(selectedProfile, providerCollection, enabledBy);
@@ -142,7 +143,7 @@ namespace Microsoft.Diagnostics.Tools.Trace
                 if (providerCollection.Count <= 0)
                 {
                     Console.Error.WriteLine("No providers were specified to start a trace.");
-                    return ErrorCodes.ArgumentError;
+                    return ReturnCode.ArgumentError;
                 }
 
                 PrintProviders(providerCollection, enabledBy);
@@ -150,7 +151,7 @@ namespace Microsoft.Diagnostics.Tools.Trace
                 DiagnosticsClient diagnosticsClient;
                 Process process;
                 DiagnosticsClientBuilder builder = new DiagnosticsClientBuilder("dotnet-trace", 10);
-                bool shouldResumeRuntime = ProcessLauncher.Launcher.HasChildProc || !string.IsNullOrEmpty(diagnosticPort);
+                bool shouldResumeRuntime = ProcessLauncher.Launcher.HasChildProc || !string.IsNullOrEmpty(diagnosticPort) || resumeRuntime;
                 var shouldExit = new ManualResetEvent(false);
                 ct.Register(() => shouldExit.Set());
 
@@ -159,10 +160,10 @@ namespace Microsoft.Diagnostics.Tools.Trace
                     // if builder returned null, it means we received ctrl+C while waiting for clients to connect. Exit gracefully.
                     if (holder == null)
                     {
-                        return await Task.FromResult(ret);
+                        return await Task.FromResult(ReturnCode.Ok);
                     }
                     diagnosticsClient = holder.Client;
-                    if (shouldResumeRuntime)
+                    if (ProcessLauncher.Launcher.HasChildProc || !string.IsNullOrEmpty(diagnosticPort))
                     {
                         process = Process.GetProcessById(holder.EndpointInfo.ProcessId);
                     }
@@ -186,7 +187,7 @@ namespace Microsoft.Diagnostics.Tools.Trace
                             if (attempts > 10)
                             {
                                 Console.Error.WriteLine("Unable to examine process.");
-                                return ErrorCodes.SessionCreationError;
+                                return ReturnCode.SessionCreationError;
                             }
                             Thread.Sleep(200);
                         }
@@ -223,7 +224,7 @@ namespace Microsoft.Diagnostics.Tools.Trace
                         if (session == null)
                         {
                             Console.Error.WriteLine("Unable to create session.");
-                            return ErrorCodes.SessionCreationError;
+                            return ReturnCode.SessionCreationError;
                         }
 
                         if (shouldStopAfterDuration)
@@ -324,8 +325,8 @@ namespace Microsoft.Diagnostics.Tools.Trace
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"[ERROR] {ex.ToString()}");
-                ret = ErrorCodes.TracingError;
                 collectionStopped = true;
+                ret = ReturnCode.TracingError;
             }
             finally
             {
@@ -339,7 +340,7 @@ namespace Microsoft.Diagnostics.Tools.Trace
                 {
                     if (!collectionStopped || ct.IsCancellationRequested)
                     {
-                        ret = ErrorCodes.TracingError;
+                        ret = ReturnCode.TracingError;
                     }
 
                     // If we launched a child proc that hasn't exited yet, terminate it before we exit.
@@ -399,7 +400,8 @@ namespace Microsoft.Diagnostics.Tools.Trace
                 CLREventLevelOption(),
                 CommonOptions.NameOption(),
                 DiagnosticPortOption(),
-                ShowChildIOOption()
+                ShowChildIOOption(),
+                ResumeRuntimeOption()
             };
 
         private static uint DefaultCircularBufferSizeInMB() => 256;
@@ -481,6 +483,14 @@ namespace Microsoft.Diagnostics.Tools.Trace
                 description: @"Shows the input and output streams of a launched child process in the current console.")
             {
                 Argument = new Argument<bool>(name: "show-child-io", getDefaultValue: () => false)
+            };
+
+        private static Option ResumeRuntimeOption() =>
+            new Option(
+                alias: "--resume-runtime",
+                description: @"Resume runtime once session has been initialized, defaults to true. Disable resume of runtime using --resume-runtime:false")
+            {
+                Argument = new Argument<bool>(name: "resumeRuntime", getDefaultValue: () => true)
             };
     }
 }
