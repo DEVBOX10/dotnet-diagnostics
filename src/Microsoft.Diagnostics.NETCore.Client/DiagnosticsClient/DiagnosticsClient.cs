@@ -26,6 +26,11 @@ namespace Microsoft.Diagnostics.NETCore.Client
         {
         }
 
+        internal DiagnosticsClient(IpcEndpointConfig config) :
+            this(new DiagnosticPortIpcEndpoint(config))
+        {
+        }
+
         internal DiagnosticsClient(IpcEndpoint endpoint)
         {
             _endpoint = endpoint;
@@ -158,7 +163,7 @@ namespace Microsoft.Diagnostics.NETCore.Client
 
         /// <summary>
         /// Set a profiler as the startup profiler. It is only valid to issue this command
-        /// while the runtime is paused in the "reverse server" mode.
+        /// while the runtime is paused at startup.
         /// </summary>
         /// <param name="profilerGuid">Guid for the profiler to be attached</param>
         /// <param name="profilerPath">Path to the profiler to be attached</param>
@@ -199,7 +204,7 @@ namespace Microsoft.Diagnostics.NETCore.Client
         }
 
         /// <summary>
-        /// Tell the runtime to resume execution after being paused for "reverse server" mode.
+        /// Tell the runtime to resume execution after being paused at startup.
         /// </summary>
         public void ResumeRuntime()
         {
@@ -308,7 +313,11 @@ namespace Microsoft.Diagnostics.NETCore.Client
             switch ((DiagnosticsServerResponseId)response.Header.CommandId)
             {
                 case DiagnosticsServerResponseId.Error:
-                    var hr = BitConverter.ToInt32(response.Payload, 0);
+                    var hr = BitConverter.ToUInt32(response.Payload, 0);
+                    if (hr == (uint)DiagnosticsIpcError.UnknownCommand)
+                    {
+                        throw new UnsupportedCommandException($"Resume runtime command is unknown by target runtime.");
+                    }
                     throw new ServerErrorException($"Resume runtime failed (HRESULT: 0x{hr:X8})");
                 case DiagnosticsServerResponseId.OK:
                     return;
