@@ -4,9 +4,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>7f13798e5f567b72ffe63205bf49839245f0f8c1</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.SymbolStore" Version="1.0.215101">
+    <Dependency Name="Microsoft.SymbolStore" Version="1.0.240901">
       <Uri>https://github.com/dotnet/symstore</Uri>
-      <Sha>3ed87724fe4e98c7ecc77617720591783ee2e676</Sha>
+      <Sha>d8e2990b89c53632653d7d67f3481cc72773f25c</Sha>
     </Dependency>
     <Dependency Name="Microsoft.Diagnostics.Runtime" Version="2.0.230301">
       <Uri>https://github.com/microsoft/clrmd</Uri>
@@ -32,21 +32,21 @@
       <Sha>7f13798e5f567b72ffe63205bf49839245f0f8c1</Sha>
       <SourceBuild RepoName="arcade" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.AspNetCore.App.Ref.Internal" Version="6.0.0-preview.7.21363.17">
+    <Dependency Name="Microsoft.AspNetCore.App.Ref.Internal" Version="6.0.0-rc.2.21418.11">
       <Uri>https://github.com/dotnet/aspnetcore</Uri>
-      <Sha>837b17847c427be12d69623cf32223c10a4ddba5</Sha>
+      <Sha>b3c9a2956735b5171981d9b4f0a8de74951d7120</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.AspNetCore.App.Ref" Version="6.0.0-preview.7.21363.17">
+    <Dependency Name="Microsoft.AspNetCore.App.Ref" Version="6.0.0-rc.2.21418.11">
       <Uri>https://github.com/dotnet/aspnetcore</Uri>
-      <Sha>837b17847c427be12d69623cf32223c10a4ddba5</Sha>
+      <Sha>b3c9a2956735b5171981d9b4f0a8de74951d7120</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.App.Runtime.win-x64" Version="6.0.0-preview.7.21361.10">
+    <Dependency Name="Microsoft.NETCore.App.Runtime.win-x64" Version="6.0.0-rc.1.21417.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>98b7ed1a3b0543a31b5a0f9069cf44cb70c9230c</Sha>
+      <Sha>14b34eb02bc8969b77c0d3a1e39fb38f450625cf</Sha>
     </Dependency>
-    <Dependency Name="VS.Redist.Common.NetCore.SharedFramework.x64.6.0" Version="6.0.0-preview.7.21361.10">
+    <Dependency Name="VS.Redist.Common.NetCore.SharedFramework.x64.6.0" Version="6.0.0-rc.1.21417.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>98b7ed1a3b0543a31b5a0f9069cf44cb70c9230c</Sha>
+      <Sha>14b34eb02bc8969b77c0d3a1e39fb38f450625cf</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>
