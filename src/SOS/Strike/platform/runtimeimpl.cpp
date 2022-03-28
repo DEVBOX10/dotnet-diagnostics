@@ -56,7 +56,7 @@ IRuntime* g_pRuntime = nullptr;
 
 #if !defined(__APPLE__)
 
-extern bool TryGetSymbol(uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress);
+extern "C" bool TryGetSymbol(uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress);
 
 bool ElfReaderReadMemory(void* address, void* buffer, size_t size)
 {
@@ -520,11 +520,7 @@ HRESULT Runtime::GetCorDebugInterface(ICorDebugProcess** ppCorDebugProcess)
         m_pCorDebugProcess->Release();
         m_pCorDebugProcess = nullptr;
     }
-#if defined(FEATURE_CORESYSTEM)
     GUID skuId = CLR_ID_ONECORE_CLR;
-#else
-    GUID skuId = CLR_ID_CORECLR;
-#endif
 #ifndef FEATURE_PAL
     if (GetRuntimeConfiguration() == IRuntime::WindowsDesktop)
     {
@@ -705,12 +701,12 @@ void Runtime::DisplayStatus()
 \**********************************************************************/
 void Runtime::LoadRuntimeModules()
 {
-    HRESULT hr = InitializeSymbolService();
-    if (SUCCEEDED(hr))
+    ISymbolService* symbolService = GetSymbolService();
+    if (symbolService != nullptr)
     {
         if (m_runtimeInfo != nullptr)
         {
-            GetSymbolService()->LoadNativeSymbolsFromIndex(
+            symbolService->LoadNativeSymbolsFromIndex(
                 SymbolFileCallback,
                 this,
                 GetRuntimeConfiguration(),
@@ -721,7 +717,7 @@ void Runtime::LoadRuntimeModules()
         }
         else
         {
-            GetSymbolService()->LoadNativeSymbols(
+            symbolService->LoadNativeSymbols(
                 SymbolFileCallback,
                 this,
                 GetRuntimeConfiguration(),
