@@ -29,9 +29,20 @@ namespace Microsoft.Diagnostics.DebugServices
         /// <param name="value"></param>
         void WriteError(string value);
 
+        /// <summary>Writes Debugger Markup Language (DML) markup text.</summary>
+        void WriteDml(string text);
+
+        /// <summary>Gets whether <see cref="WriteDml"/> is supported.</summary>
+        bool SupportsDml { get; }
+
         /// <summary>
         /// Cancellation token for current command
         /// </summary>
         CancellationToken CancellationToken { get; set; }
+
+        /// <summary>
+        /// Screen or window width or 0.
+        /// </summary>
+        int WindowWidth { get; }
     }
 }

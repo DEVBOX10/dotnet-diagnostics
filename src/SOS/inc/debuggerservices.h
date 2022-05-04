@@ -143,6 +143,14 @@ public:
         ULONG moduleIndex,
         PCSTR name,
         PULONG64 offset) = 0;
+
+    virtual ULONG STDMETHODCALLTYPE GetOutputWidth() = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE SupportsDml(PULONG supported) = 0;
+
+    virtual void STDMETHODCALLTYPE OutputDmlString(
+        ULONG mask,
+        PCSTR message) = 0;
 };
 
 #ifdef __cplusplus

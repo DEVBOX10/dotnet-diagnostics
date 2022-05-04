@@ -396,6 +396,14 @@ public:
         PCSTR name,
         PULONG64 offset);
 
+    ULONG STDMETHODCALLTYPE GetOutputWidth();
+
+    HRESULT STDMETHODCALLTYPE SupportsDml(PULONG supported);
+
+    void STDMETHODCALLTYPE OutputDmlString(
+        ULONG mask,
+        PCSTR str);
+
     //----------------------------------------------------------------------------
     // LLDBServices (internal)
     //----------------------------------------------------------------------------

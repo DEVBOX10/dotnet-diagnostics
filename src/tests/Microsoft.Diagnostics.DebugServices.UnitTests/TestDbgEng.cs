@@ -1,5 +1,4 @@
-﻿using Microsoft.Diagnostics.Repl;
-using Microsoft.Diagnostics.Runtime;
+﻿using Microsoft.Diagnostics.Runtime;
 using Microsoft.Diagnostics.Runtime.Interop;
 using Microsoft.Diagnostics.Runtime.Utilities;
 using Microsoft.Diagnostics.TestHelpers;
@@ -99,13 +98,17 @@ namespace Microsoft.Diagnostics.DebugServices.UnitTests
                     throw new DiagnosticsException($"Loading {sosPath} FAILED {hr:X8}");
                 }
 
+                // Set the HTTP symbol store timeout and retry count before the symbol path is added to the symbol service
+                HostServices.DefaultTimeout = 6;
+                HostServices.DefaultRetryCount = 5;
+
                 // Initialize the extension host
                 hr = HostServices.Initialize(sosPath);
                 if (hr != HResult.S_OK) {
                     throw new DiagnosticsException($"HostServices.Initialize({sosPath}) FAILED {hr:X8}");
                 }
 
-                var symbolService = Host.Services.GetService<ISymbolService>();
+                ISymbolService symbolService = Host.Services.GetService<ISymbolService>();
                 Trace.TraceInformation($"SymbolService: {symbolService}");
             }
 

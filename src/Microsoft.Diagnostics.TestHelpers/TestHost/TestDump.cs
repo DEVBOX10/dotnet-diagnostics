@@ -1,12 +1,12 @@
-﻿using Microsoft.Diagnostics.DebugServices.Implementation;
+﻿using Microsoft.Diagnostics.DebugServices;
+using Microsoft.Diagnostics.DebugServices.Implementation;
 using Microsoft.Diagnostics.Runtime;
-using Microsoft.Diagnostics.TestHelpers;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace Microsoft.Diagnostics.DebugServices.UnitTests
+namespace Microsoft.Diagnostics.TestHelpers
 {
     public class TestDump : TestHost, IHost
     {
@@ -26,7 +26,7 @@ namespace Microsoft.Diagnostics.DebugServices.UnitTests
             _serviceProvider.AddService<ISymbolService>(_symbolService);
 
             // Automatically enable symbol server support
-            _symbolService.AddSymbolServer(msdl: true, symweb: false, symbolServerPath: null, authToken: null, timeoutInMinutes: 0);
+            _symbolService.AddSymbolServer(msdl: true, symweb: false, timeoutInMinutes: 6, retryCount: 5);
             _symbolService.AddCachePath(_symbolService.DefaultSymbolCache);
         }
 
