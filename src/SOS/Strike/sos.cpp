@@ -4,20 +4,8 @@
 
 #include "strike.h"
 #include "util.h"
-
 #include "sos.h"
-
-
-#ifdef _ASSERTE
-#undef _ASSERTE
-#endif
-
-#define _ASSERTE(a) {;}
-
 #include "gcdesc.h"
-
-
-#undef _ASSERTE
 
 namespace sos
 {
@@ -505,7 +493,7 @@ namespace sos
                 int entries = 0;
 
                 if (FAILED(MOVE(entries, mt-sizeof(TADDR))))
-                    Throw<DataRead>("Failed to request number of entries.");
+                    Throw<DataRead>("Failed to request number of entries for %p MT %p", mObject, mt);
 
                 // array of vc?
                 if (entries < 0)
@@ -596,9 +584,7 @@ namespace sos
         }
 
         mCurrObj = mStart < TO_TADDR(mSegment.mem) ? TO_TADDR(mSegment.mem) : mStart;
-        mSegmentEnd = (segStart == TO_TADDR(mHeaps[0].ephemeral_heap_segment)) ?
-                            TO_TADDR(mHeaps[0].alloc_allocated) :
-                            TO_TADDR(mSegment.allocated);
+        mSegmentEnd = TO_TADDR(mSegment.highAllocMark);
 
         CheckSegmentRange();
     }
@@ -661,9 +647,7 @@ namespace sos
 
         mLastObj = 0;
         mCurrObj = mStart < TO_TADDR(mSegment.mem) ? TO_TADDR(mSegment.mem) : mStart;
-        mSegmentEnd = (next == TO_TADDR(mHeaps[mCurrHeap].ephemeral_heap_segment)) ?
-                            TO_TADDR(mHeaps[mCurrHeap].alloc_allocated) :
-                            TO_TADDR(mSegment.allocated);
+        mSegmentEnd = TO_TADDR(mSegment.highAllocMark);
         return CheckSegmentRange();
     }
 

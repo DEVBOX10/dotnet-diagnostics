@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Diagnostics.Runtime.Utilities;
 using Microsoft.FileFormats;
-using Microsoft.FileFormats.ELF;
-using Microsoft.FileFormats.MachO;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 
@@ -169,11 +165,11 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
                         else
                         {
                             // Find or download the ELF image, if one.
-                            Reader virtualAddressReader = module.Services.GetService<ELFFile>()?.VirtualAddressReader;
+                            Reader virtualAddressReader = module.Services.GetService<ELFModule>()?.VirtualAddressReader;
                             if (virtualAddressReader is null)
                             {
                                 // Find or download the MachO image, if one.
-                                virtualAddressReader = module.Services.GetService<MachOFile>()?.VirtualAddressReader;
+                                virtualAddressReader = module.Services.GetService<MachOModule>()?.VirtualAddressReader;
                             }
                             if (virtualAddressReader is not null)
                             {
