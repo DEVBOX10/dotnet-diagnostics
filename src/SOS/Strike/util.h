@@ -123,14 +123,10 @@ class MethodTable;
 #define HNDTYPE_SIZEDREF                        (8)
 #define HNDTYPE_WEAK_WINRT                      (9)
 
-// Anything above this we consider abnormal and stop processing heap information
-const int nMaxHeapSegmentCount = 1000;
-
 class BaseObject
 {
     MethodTable    *m_pMethTab;
 };
-
 
 const BYTE gElementTypeInfo[] = {
 #define TYPEINFO(e,ns,c,s,g,ia,ip,if,im,gv)    s,
@@ -446,11 +442,13 @@ public:
         highest_address = dacGCDetails.highest_address;
         card_table = dacGCDetails.card_table;
         has_regions = generation_table[0].start_segment != generation_table[1].start_segment;
+        has_background_gc = dacGCDetails.mark_array != -1;
     }
 
     DacpGcHeapDetails original_heap_details;
     bool has_poh;
     bool has_regions;
+    bool has_background_gc;
     CLRDATA_ADDRESS heapAddr; // Only filled in in server mode, otherwise NULL
     CLRDATA_ADDRESS alloc_allocated;
 
