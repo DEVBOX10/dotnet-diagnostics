@@ -157,6 +157,11 @@ typedef HRESULT (STDAPICALLTYPE *FPCoreCLRCreateCordbObject3)(
     HMODULE hmodTargetCLR,
     IUnknown **ppCordb);
 
+typedef HRESULT (STDAPICALLTYPE *FPCreateRemoteCordbObject)(
+    DWORD port,
+    LPCSTR assemblyBasePath,
+    IUnknown **ppCordb);
+
 HRESULT CreateCoreDbg(
     HMODULE hCLRModule,
     DWORD processId,
@@ -354,6 +359,7 @@ public:
             hr = GetTargetCLRMetrics(clrInfo.RuntimeModulePath, NULL, &clrInfo, NULL);
             if (FAILED(hr))
             { 
+                // Runtime module not found (return false). This isn't an error that needs to be reported via the callback.
                 return false;
             }
 
@@ -407,7 +413,7 @@ public:
             // Invoke the callback on error
             m_callback(NULL, m_parameter, hr);
         }
-
+        // Runtime module found (return true)
         return true;
     }
 
@@ -1116,12 +1122,6 @@ GetTargetCLRMetrics(
         return HRESULT_FROM_WIN32(GetLastError());
     }
 
-    // A maximum size of 100 MB should be more than enough for coreclr.dll.
-    if ((cbFileHigh != 0) || (cbFileLow > 0x6400000) || (cbFileLow == 0))
-    {
-        return E_FAIL;
-    }
-
     HandleHolder hCoreClrMap = WszCreateFileMapping(hCoreClrFile, NULL, PAGE_READONLY, cbFileHigh, cbFileLow, NULL);
     if (hCoreClrMap == NULL)
     {
@@ -1293,12 +1293,13 @@ GetTargetCLRMetrics(
     {
         if (IsCoreClr(wszModulePath))
         {
-            // Get the runtime index info (build id) for Linux/MacOS
-            if (!TryGetBuildIdFromFile(wszModulePath, pClrInfoOut->RuntimeBuildId, MAX_BUILDID_SIZE, &pClrInfoOut->RuntimeBuildIdSize)) 
+            // Get the runtime index info (build id) for Linux/MacOS. If getting the build id fails for any reason, return success
+            // but with an invalid ClrInfo (unknown index type, no build id) so ProvideLibraries fails in InvokeStartupCallback and
+            // invokes the callback with an error.
+            if (TryGetBuildIdFromFile(wszModulePath, pClrInfoOut->RuntimeBuildId, MAX_BUILDID_SIZE, &pClrInfoOut->RuntimeBuildIdSize)) 
             {
-                return E_FAIL;
+                pClrInfoOut->IndexType = LIBRARY_PROVIDER_INDEX_TYPE::Runtime;
             }
-            pClrInfoOut->IndexType = LIBRARY_PROVIDER_INDEX_TYPE::Runtime; 
         }
         else
         { 
@@ -2154,4 +2155,44 @@ CLRCreateInstance(
         return E_OUTOFMEMORY;
 
     return pDebuggingImpl->QueryInterface(riid, ppInterface);
+}
+
+HRESULT CreateCoreDbgRemotePort(HMODULE hDBIModule, DWORD portId, LPCSTR assemblyBasePath, IUnknown **ppCordb)
+{
+    PUBLIC_CONTRACT;
+    HRESULT hr = S_OK;
+
+    FPCreateRemoteCordbObject fpCreate =
+        (FPCreateRemoteCordbObject)GetProcAddress(hDBIModule, "CreateRemoteCordbObject");
+    if (fpCreate == NULL)
+    {
+        return CORDBG_E_INCOMPATIBLE_PROTOCOL;
+    }
+
+    return fpCreate(portId, assemblyBasePath, ppCordb);
+
+    return hr;
+}
+
+DLLEXPORT
+HRESULT
+RegisterForRuntimeStartupRemotePort(
+    _In_ DWORD dwRemotePortId,
+    _In_ LPCSTR mscordbiPath,
+    _In_ LPCSTR assemblyBasePath,
+    _Out_ IUnknown ** ppCordb)
+{
+    PUBLIC_CONTRACT;
+    HRESULT hr = S_OK;
+    HMODULE hMod = NULL;
+
+    hMod = LoadLibraryA(mscordbiPath);
+    if (hMod == NULL)
+    {
+        hr = CORDBG_E_DEBUG_COMPONENT_MISSING;
+        return hr;
+    }
+
+    hr = CreateCoreDbgRemotePort(hMod, dwRemotePortId, assemblyBasePath, ppCordb);
+    return S_OK;
 }

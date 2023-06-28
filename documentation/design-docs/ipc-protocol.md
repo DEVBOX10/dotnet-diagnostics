@@ -380,6 +380,9 @@ enum class ProcessCommandId : uint8_t
     ResumeRuntime      = 0x01,
     ProcessEnvironment = 0x02,
     ProcessInfo2       = 0x04,
+    EnablePerfMap      = 0x05,
+    DisablePerfMap     = 0x06,
+    ApplyStartupHook   = 0x07
     // future
 }
 ```
@@ -845,6 +848,130 @@ struct Payload
 }
 ```
 
+### `EnablePerfMap`
+
+Command Code: `0x0405`
+
+The `EnablePerfMap` command instructs the runtime to start emitting perfmap or jitdump files for the process. These files are used by the perf tool to correlate jitted code addresses in a trace.
+
+In the event of an [error](#Errors), the runtime will attempt to send an error message and subsequently close the connection.
+
+#### Inputs:
+
+Header: `{ Magic; Size; 0x0405; 0x0000 }`
+
+Payload:
+* `uint32_t perfMapType`: the type of generation to enable
+
+#### Returns (as an IPC Message Payload):
+
+Header: `{ Magic; 28; 0xFF00; 0x0000; }`
+
+`EnablePerfMap` returns:
+* `int32 hresult`: The result of enabling the perfmap or jitdump files (`0` indicates success)
+
+##### Details:
+
+Inputs:
+```c++
+enum class PerfMapType
+{
+    DISABLED = 0,
+    ALL      = 1,
+    JITDUMP  = 2,
+    PERFMAP  = 3
+}
+
+struct Payload
+{
+    uint32_t perfMapType;
+}
+```
+
+Returns:
+```c
+Payload
+{
+    int32 hresult
+}
+```
+
+> Available since .NET 8.0
+
+### `DisablePerfMap`
+
+Command Code: `0x0406`
+
+The `DisablePerfMap` command instructs the runtime to stop emitting perfmap or jitdump files for the process. These files are used by the perf tool to correlate jitted code addresses in a trace.
+
+In the event of an [error](#Errors), the runtime will attempt to send an error message and subsequently close the connection.
+
+#### Inputs:
+
+Header: `{ Magic; Size; 0x0405; 0x0000 }`
+
+Payload: There is no payload with this command.
+
+#### Returns (as an IPC Message Payload):
+
+Header: `{ Magic; 28; 0xFF00; 0x0000; }`
+
+`DisablePerfMap` returns:
+* `int32 hresult`: The result of enabling the perfmap or jitdump files (`0` indicates success)
+
+##### Details:
+
+Returns:
+```c
+Payload
+{
+    int32 hresult
+}
+```
+
+> Available since .NET 8.0
+
+### `ApplyStartupHook`
+
+Command Code: `0x0407`
+
+The `ApplyStartupHook` command is used to provide a path to a managed assembly with a [startup hook](https://github.com/dotnet/runtime/blob/main/docs/design/features/host-startup-hook.md) to the runtime. During diagnostic suspension, the startup hook path will be added list of hooks that the runtime will execute once it has been resumed.
+
+In the event of an [error](#Errors), the runtime will attempt to send an error message and subsequently close the connection.
+
+#### Inputs:
+
+Header: `{ Magic; Size; 0x0407; 0x0000 }`
+
+* `string startupHookPath`: The path to the managed assembly that contains the startup hook implementation.
+
+#### Returns (as an IPC Message Payload):
+
+Header: `{ Magic; size; 0xFF00; 0x0000; }`
+
+`ApplyStartupHook` returns:
+* `int32 hresult`: The result of adding the startup hook (`0` indicates success)
+
+##### Details:
+
+Input:
+```
+Payload
+{
+    string startupHookPath
+}
+```
+
+Returns:
+```c++
+struct Payload
+{
+    int32 hresult
+}
+```
+
+> Available since .NET 8.0
+
 ## Errors
 
 In the event an error occurs in the handling of an Ipc Message, the Diagnostic Server will attempt to send an Ipc Message encoding the error and subsequently close the connection.  The connection will be closed **regardless** of the success of sending the error message.  The Client is expected to be resilient in the event of a connection being abruptly closed.
@@ -950,7 +1077,7 @@ Example usage:
 $ export DOTNET_DiagnosticPorts=$DOTNET_DiagnosticPorts;~/mydiagport.sock,nosuspend;
 ```
 
-Any diagnostic ports specified in this configuration will be created in addition to the default port (`dotnet-diagnostic-<pid>-<epoch>`). The suspend mode of the default port is set via the new environment variable `DOTNET_DefaultDotnetPortSuspend` which defaults to `0` for `nosuspend`.
+Any diagnostic ports specified in this configuration will be created in addition to the default port (`dotnet-diagnostic-<pid>-<epoch>`). The suspend mode of the default port is set via the new environment variable `DOTNET_DefaultDiagnosticPortSuspend` which defaults to `0` for `nosuspend`.
 
 Each port configuration specifies whether it is a `suspend` or `nosuspend` port. Ports specifying `suspend` in their configuration will cause the runtime to pause early on in the startup path before most runtime subsystems have started. This allows any agent to receive a connection and properly setup before the application startup continues. Since multiple ports can individually request suspension, the `resume` command needs to be sent by each suspended port connection before the runtime resumes execution.
 
