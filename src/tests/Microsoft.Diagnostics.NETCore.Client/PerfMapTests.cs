@@ -88,7 +88,7 @@ namespace Microsoft.Diagnostics.NETCore.Client
 
         private void CheckWellKnownMethods(PerfMapType type, int pid)
         {
-            string[] wellKnownNames = new string[] { "Tracee.Program::Main", "System.PackedSpanHelpers::IndexOf" };
+            string[] wellKnownNames = new string[] { "Tracee.Program::Main", "System.Text.Unicode.Utf16Utility::GetPointerToFirstInvalidChar" };
 
             if (type == PerfMapType.All || type == PerfMapType.PerfMap)
             {
@@ -152,12 +152,20 @@ namespace Microsoft.Diagnostics.NETCore.Client
         [SkippableTheory, MemberData(nameof(Configurations))]
         public async Task GenerateAllTest(TestConfiguration config)
         {
+            if (config.RuntimeFrameworkVersionMajor >= 8)
+            {
+                throw new SkipTestException("https://github.com/dotnet/diagnostics/issues/4191");
+            }
             await GenerateTestCore(PerfMapType.All, config);
         }
 
         [SkippableTheory, MemberData(nameof(Configurations))]
         public async Task GeneratePerfMapTest(TestConfiguration config)
         {
+            if (config.RuntimeFrameworkVersionMajor >= 8)
+            {
+                throw new SkipTestException("https://github.com/dotnet/diagnostics/issues/4191");
+            }
             await GenerateTestCore(PerfMapType.PerfMap, config);
         }
 

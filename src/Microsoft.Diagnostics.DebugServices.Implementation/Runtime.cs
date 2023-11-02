@@ -22,6 +22,7 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
         private readonly ClrInfo _clrInfo;
         private readonly ISymbolService _symbolService;
         private Version _runtimeVersion;
+        private ClrRuntime _clrRuntime;
         private string _dacFilePath;
         private string _dbiFilePath;
 
@@ -29,7 +30,7 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
 
         public Runtime(IServiceProvider services, int id, ClrInfo clrInfo)
         {
-            Target = services.GetService<ITarget>() ?? throw new ArgumentNullException(nameof(Target), "Uninitialized service");
+            Target = services.GetService<ITarget>() ?? throw new NullReferenceException($"Uninitialized service: {nameof(Target)}");
             Id = id;
             _clrInfo = clrInfo ?? throw new ArgumentNullException(nameof(clrInfo));
             _symbolService = services.GetService<ISymbolService>();
@@ -56,12 +57,10 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
 
         void IDisposable.Dispose()
         {
-            if (_serviceContainer.TryGetCachedService(typeof(ClrRuntime), out object service))
-            {
-                // The DataTarget created in the RuntimeProvider is disposed here. The ClrRuntime
-                // instance is disposed below in DisposeServices().
-                ((ClrRuntime)service).DataTarget.Dispose();
-            }
+            // The DataTarget created in the RuntimeProvider is disposed here. The ClrRuntime
+            // instance is disposed below in DisposeServices().
+            _clrRuntime?.DataTarget.Dispose();
+            _clrRuntime = null;
             _serviceContainer.RemoveService(typeof(IRuntime));
             _serviceContainer.DisposeServices();
         }
@@ -125,7 +124,7 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
                 {
                     // Ignore the DAC version mismatch that can happen because the clrmd ELF dump reader
                     // returns 0.0.0.0 for the runtime module that the DAC is matched against.
-                    return _clrInfo.CreateRuntime(dacFilePath, ignoreMismatch: true);
+                    return _clrRuntime = _clrInfo.CreateRuntime(dacFilePath, ignoreMismatch: true);
                 }
                 catch (Exception ex) when
                    (ex is DllNotFoundException or
@@ -253,7 +252,7 @@ namespace Microsoft.Diagnostics.DebugServices.Implementation
                 if (key is not null)
                 {
                     // Now download the DAC module from the symbol server
-                    filePath = _symbolService.DownloadFile(key);
+                    filePath = _symbolService.DownloadFile(key.Index, key.FullPathName);
                 }
             }
             else
